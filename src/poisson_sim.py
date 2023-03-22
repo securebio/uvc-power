@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt  # type: ignore
 
 
 def simulate(
+    num_trips: int,
     avg_init_infected: float,
     T1: int,
     T2: int,
@@ -11,12 +12,8 @@ def simulate(
     c: float,
     outside_infection_rate: float = 0.0,
 ) -> np.ndarray:
-    n_infected = np.zeros((Tc + 1, T2 - T1))
-    n_infected[0] = initialize_infected(
-        avg_init_infected,
-        T1,
-        T2,
-    )
+    n_infected = np.zeros((Tc + 1, T2 - T1, num_trips))
+    n_infected[0] = initialize_infected(avg_init_infected, T1, T2, num_trips)
     for i in range(1, Tc + 1):
         new_infections = generate_new_infections(
             n_infected[i - 1], p, c, outside_infection_rate
@@ -30,15 +27,16 @@ def initialize_infected(
     avg_init_infected: float,
     T1: int,
     T2: int,
+    num_trips: int,
 ) -> np.ndarray:
     lam = avg_init_infected / float(T2 - T1)
-    return np.random.poisson(lam, T2 - T1)
+    return np.random.poisson(lam, (T2 - T1, num_trips))
 
 
 def generate_new_infections(
     n_infected: np.ndarray, p: float, c: float, outside_infection_rate: float
 ) -> int:
-    lam = p * c * np.sum(n_infected) + outside_infection_rate
+    lam = p * c * np.sum(n_infected, axis=0) + outside_infection_rate
     return np.random.poisson(lam)
 
 
@@ -60,16 +58,26 @@ if __name__ == "__main__":
     p = R0 / (c * (T2 - T1))
 
     # Cruise parameters
+    num_trips = 3
     Tc = 10
     avg_init_infected = 16
     reduction_factor = 0.5
-    outside_infection_rate = 0.1
+    outside_infection_rate = 0.0
 
     n_sims = 10000
     pos_tests_null1 = np.array(
         [
             total_positive_tests(
-                simulate(avg_init_infected, T1, T2, Tc, p, c, outside_infection_rate),
+                simulate(
+                    num_trips,
+                    avg_init_infected,
+                    T1,
+                    T2,
+                    Tc,
+                    p,
+                    c,
+                    outside_infection_rate,
+                ),
                 Tpos,
             )
             for i in range(n_sims)
@@ -79,7 +87,16 @@ if __name__ == "__main__":
     pos_tests_null2 = np.array(
         [
             total_positive_tests(
-                simulate(avg_init_infected, T1, T2, Tc, p, c, outside_infection_rate),
+                simulate(
+                    num_trips,
+                    avg_init_infected,
+                    T1,
+                    T2,
+                    Tc,
+                    p,
+                    c,
+                    outside_infection_rate,
+                ),
                 Tpos,
             )
             for i in range(n_sims)
@@ -89,7 +106,10 @@ if __name__ == "__main__":
     pos_tests_alt = np.array(
         [
             total_positive_tests(
-                simulate(avg_init_infected, T1, T2, Tc, p * reduction_factor, c), Tpos
+                simulate(
+                    num_trips, avg_init_infected, T1, T2, Tc, p * reduction_factor, c
+                ),
+                Tpos,
             )
             for i in range(n_sims)
         ]
