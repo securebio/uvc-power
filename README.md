@@ -35,6 +35,15 @@ We model the effect of UV lamps as a reduction in $p$ by a multiplicative factor
 We do not, at present, model contacts in public and private areas separately, nor do we model an explicit contact network on the ship.
 Instead, we assume treat these effects in a coarse-grained way through $f$.
 
+### Infections over time
+
+The cruise has $N$ passengers and last for $T_c$ days.
+We assume that the virus is at prevalence $\lambda_0$ in the population the cruise ship passengers come from.
+We initialize the number of individuals who were infected $T_1 \leq \tau < T_2$ days ago by drawing independent Poisson random variables with mean:
+$$
+\frac{\lambda_0 N}{T_2 - T_2}.
+$$
+
 ### Measurements
 
 We assume that every person on the cruise gives a sample once per day and that the samples are tested for a panel of respiratory viruses.
