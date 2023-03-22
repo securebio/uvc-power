@@ -92,6 +92,7 @@ The shaded area is the portion of the distribution above $D_{thresh}$.
 - Bulk model of the passengers: no structure to interactions, no explicit public/private space contacts
 - Assumes parameters are known and constant
 - Number of contacts per person per day independent of the number of passengers on the ship (alternatively it could scale linearly or sublinearly)
+- Everyone is tested every day
 
 ## Results
 
@@ -138,3 +139,11 @@ Viral prevalence = 0.1 per person
 Rate of new cases from outside the ship = 1 per 400 people per day
 
 ![Power analysis 4](fig/power_analysis_prevalence=0.1_orate=0.0025.png)
+
+## Conclusions
+
+- The short trips with few people are underpowered
+- Outside contacts (at least at the rate tested) do not effect the power much at all
+- Power is very sensitive to the initial number of infected people (through the number of passengers and the viral prevalence).
+- We likely would need to test a large ship, ideally over multiple cruises.
+- We might be able to extract more value using better statistics, but we've also made some optimistic simplifying assumptions, so I would take these as upper-bound estimates of the power.
