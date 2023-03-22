@@ -40,9 +40,7 @@ Instead, we assume treat these effects in a coarse-grained way through $f$.
 The cruise has $N$ passengers and last for $T_c$ days.
 We assume that the virus is at prevalence $\lambda_0$ in the population the cruise ship passengers come from.
 We initialize the number of individuals who were infected $T_1 \leq \tau < T_2$ days ago by drawing independent Poisson random variables with mean:
-$$
-\frac{\lambda_0 N}{T_2 - T_2}.
-$$
+$$\frac{\lambda_0 N}{T_2 - T_2}.$$
 
 ### Measurements
 
