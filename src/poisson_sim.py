@@ -9,6 +9,7 @@ def simulate(
     Tc: int,
     p: float,
     c: float,
+    outside_infection_rate: float = 0.0,
 ) -> np.ndarray:
     n_infected = np.zeros((Tc + 1, T2 - T1))
     n_infected[0] = initialize_infected(
@@ -17,7 +18,9 @@ def simulate(
         T2,
     )
     for i in range(1, Tc + 1):
-        new_infections = generate_new_infections(n_infected[i - 1], p, c)
+        new_infections = generate_new_infections(
+            n_infected[i - 1], p, c, outside_infection_rate
+        )
         n_infected[i, 0] = new_infections
         n_infected[i, 1:] = n_infected[i - 1, :-1]
     return n_infected
@@ -32,8 +35,10 @@ def initialize_infected(
     return np.random.poisson(lam, T2 - T1)
 
 
-def generate_new_infections(n_infected: np.ndarray, p: float, c: float) -> int:
-    lam = p * c * np.sum(n_infected)
+def generate_new_infections(
+    n_infected: np.ndarray, p: float, c: float, outside_infection_rate: float
+) -> int:
+    lam = p * c * np.sum(n_infected) + outside_infection_rate
     return np.random.poisson(lam)
 
 
@@ -58,18 +63,25 @@ if __name__ == "__main__":
     Tc = 10
     avg_init_infected = 16
     reduction_factor = 0.5
+    outside_infection_rate = 0.1
 
     n_sims = 10000
     pos_tests_null1 = np.array(
         [
-            total_positive_tests(simulate(avg_init_infected, T1, T2, Tc, p, c), Tpos)
+            total_positive_tests(
+                simulate(avg_init_infected, T1, T2, Tc, p, c, outside_infection_rate),
+                Tpos,
+            )
             for i in range(n_sims)
         ]
     )
 
     pos_tests_null2 = np.array(
         [
-            total_positive_tests(simulate(avg_init_infected, T1, T2, Tc, p, c), Tpos)
+            total_positive_tests(
+                simulate(avg_init_infected, T1, T2, Tc, p, c, outside_infection_rate),
+                Tpos,
+            )
             for i in range(n_sims)
         ]
     )
