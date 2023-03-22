@@ -99,13 +99,16 @@ if __name__ == "__main__":
         bins=bins,
         histtype="step",
         color="C1",
-        label=f"efficacy = {reduction_factor}",
+        label="50% reduction in spread",
     )
-    plt.hist(d_control, bins=bins, histtype="step", color="C0", label="efficacy = 0")
+    plt.hist(
+        d_control, bins=bins, histtype="step", color="C0", label="null (no reduction)"
+    )
     plt.legend()
     plt.xlabel("Difference in new case numbers")
     plt.ylabel("Number of simulations")
     plt.title(f"Power = {power:.2f}")
+    plt.savefig("fig/power_example.png")
     plt.show()
 
     ax1 = plt.subplot(211)
