@@ -41,11 +41,11 @@ def generate_new_infections(
     return np.random.poisson(lam)
 
 
-def new_positive_tests(n_infected: np.ndarray, tpos: int) -> np.ndarray:
-    return n_infected[:, tpos]
+def new_positive_tests(n_infected: np.ndarray, Tpos: int) -> np.ndarray:
+    return n_infected[:, Tpos]
 
 
-def total_positive_tests(n_infected: np.ndarray, tpos: int) -> int:
+def total_positive_tests(n_infected: np.ndarray, Tpos: int) -> int:
     return np.sum(new_positive_tests(n_infected[1:], Tpos))
 
 
@@ -60,8 +60,8 @@ if __name__ == "__main__":
 
     # Cruise parameters
     num_trips = 1
-    Tc = 10
-    avg_init_infected = 16
+    Tc = 20
+    avg_init_infected = 16 * 2
     reduction_factor = 0.5
     outside_infection_rate = 0.0
 
