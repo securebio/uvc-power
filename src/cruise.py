@@ -4,12 +4,14 @@ from dataclasses import dataclass
 
 Curve = Callable[[int], float]
 
+
 @dataclass
 class DiseaseState:
     name: str
     succeptibility: Curve
     infectiousness: Curve
     shedding: Curve
+
 
 class Person:
     def __init__(self, initial_state: DiseaseState, start_day: int):
@@ -33,26 +35,15 @@ class Person:
         else:
             return state
 
-def interact(infector: Person, infectee: Person, day: int):
-    s1 = infector.get_state_on_day(day)
-    s2 = infectee.get_state_on_day(day)
-    p = s1.infectiousness(day) * s2.succeptibility(day)
-    if random() <= p:
-        infectee.add_state(infector.get_current_state
 
 if __name__ == "__main__":
     s = DiseaseState(
-            "susceptible",
-            lambda d: 1.0,
-            lambda d: 0.0,
-            lambda d: 0.0,
-            )
-    i = DiseaseState(
-            "infected",
-            lambda d: 1.0,
-            lambda d: 1.0,
-            lambda d: 1.0
-            )
+        "susceptible",
+        lambda d: 1.0,
+        lambda d: 0.0,
+        lambda d: 0.0,
+    )
+    i = DiseaseState("infected", lambda d: 1.0, lambda d: 1.0, lambda d: 1.0)
     p = Person(s, 0)
     print(p.get_current_state())
     p.add_state(i, 4)
