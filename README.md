@@ -59,11 +59,16 @@ In doing so, we assume that all of the viruses have similar $R_0$, $T_1$, $T_2$,
 Infections are undetectable for a period of time from infection until $T_{+}$ days later, at which point they are detected deterministically by our test.
 In practice, we have been assuming that $T_{+} = T_1$, the latent period before infectiousness.
 
+We thus define the new measured infections on day $t$ to be:
+$$m(t) = i_{T_{+}}(t)$$
+And the total new infections over the course of the cruise to be:
+$$M = \sum_{t = 1}^{T_c} m(t)$$.
+
 ### Statistics and power analysis
 
 To determine our power to detect an effect of the lamps, we construct a simple null-hypothesis test.
-For each ship, we count the total number of new infections over the course of the cruise (and over all trips if there are multiple).
-Our test statistic is the difference, $D$ in new infections between the control ship and the UV-equipped ship.
+For each ship, we count the total number of new infections measured over the course of the cruise (and over all trips if there are multiple), $M$ as defined above.
+Our test statistic is the difference, $D = M_{control} - M_{UV}$, in new infections between the control ship and the UV-equipped ship.
 
 To estimate the null distribution of the test statistic, we sample pairs of simulated control ships and calculate the difference in new infections between the two samples.
 We use the null distribution to calculate the threshold difference in infections so that $P_{null}[D > D_{thresh}] = \alpha$ with significance level $\alpha = 0.05$.
@@ -80,9 +85,56 @@ The shaded area is the portion of the distribution above $D_{thresh}$.
 
 ### Limitations
 
-- No overdispersion
+- No overdispersion in infections
 - No heterogeneity of infections
 - Only one set of viral parameters representing multiple viruses
 - Test statistic is just difference in counts, but we'd do something more sophisticated in practice
+- Bulk model of the passengers: no structure to interactions, no explicit public/private space contacts
+- Assumes parameters are known and constant
+- Number of contacts per person per day independent of the number of passengers on the ship (alternatively it could scale linearly or sublinearly)
 
 ## Results
+
+This section shows a number of plots of estimated power as a function of the transmission reduction factor of the UV lamps, $f$.
+We vary the trip length, the number of passengers, the number of trips per ship, the prevalence of the virus, and the degree of outside contact.
+
+The following parameters are constant across all simulations:
+| Parameter | Value |
+|-----------|-------|
+| $T_1$ | 2 |
+| $T_2$ | 12 |
+| $T_{+}$ | 2 |
+| $R_0$ | 1.3 |
+
+The product of $p$ and $c$ is determined from the other parameters.
+
+### Lower prevalence / no outside contact
+
+Viral prevalence = 0.04 per person
+
+Rate of new cases from outside the ship = 0
+![Power analysis 1](fig/power_analysis_prevalence=0.04_orate=0.png)
+
+### Lower prevalence / some outside contact
+
+Viral prevalence = 0.04 per person
+
+Rate of new cases from outside the ship = 1 per 400 people per day
+
+![Power analysis 2](fig/power_analysis_prevalence=0.04_orate=0.0025.png)
+
+### Higher prevalence / no outside contact
+
+Viral prevalence = 0.1 per person
+
+Rate of new cases from outside the ship = 0
+
+![Power analysis 3](fig/power_analysis_prevalence=0.1_orate=0.png)
+
+### Higher prevalence / some outside contact
+
+Viral prevalence = 0.1 per person
+
+Rate of new cases from outside the ship = 1 per 400 people per day
+
+![Power analysis 4](fig/power_analysis_prevalence=0.1_orate=0.0025.png)
