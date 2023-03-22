@@ -1,5 +1,4 @@
 from collections.abc import Callable
-from random import random
 from dataclasses import dataclass
 
 Curve = Callable[[int], float]
