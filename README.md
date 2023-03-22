@@ -39,8 +39,16 @@ Instead, we assume treat these effects in a coarse-grained way through $f$.
 
 The cruise has $N$ passengers and last for $T_c$ days.
 We assume that the virus is at prevalence $\lambda_0$ in the population the cruise ship passengers come from.
-We initialize the number of individuals who were infected $T_1 \leq \tau < T_2$ days ago by drawing independent Poisson random variables with mean:
-$$\frac{\lambda_0 N}{T_2 - T_2}.$$
+We initialize the number of individuals who were infected $0 \leq \tau < T_2$ days ago by drawing independent Poisson random variables according to:
+$$i_{\tau} \sim Poisson(\frac{N \lambda_0}{T_2}).$$
+
+For each day of the cruise, we simulate new infections according to
+$$i_0(t) \sim Poisson(\lambda_{outside} + cpf \sum_{\tau = T_1}^{T_2 - 1} i_\tau(t-1))$$.
+where $\lambda_{outside}$ is the expected number of new infections from interactions without people outside the cruise.
+
+We also increment the age of all the other infections:
+$$i_{\tau}(t) = i_{\tau - 1}{t - 1)$$
+for $\tau > 0$.
 
 ### Measurements
 

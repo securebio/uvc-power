@@ -13,11 +13,11 @@ def simulate(
     outside_infection_rate: float,
     reduction_factor: float = 1.0,
 ) -> np.ndarray:
-    n_infected = np.zeros((Tc + 1, T2 - T1, num_trips))
-    n_infected[0] = initialize_infected(avg_init_infected, T1, T2, num_trips)
+    n_infected = np.zeros((Tc + 1, T2, num_trips))
+    n_infected[0] = initialize_infected(avg_init_infected, T2, num_trips)
     for i in range(1, Tc + 1):
         new_infections = generate_new_infections(
-            n_infected[i - 1], p * reduction_factor, c, outside_infection_rate
+            n_infected[i - 1], T1, p * reduction_factor, c, outside_infection_rate
         )
         n_infected[i, 0] = new_infections
         n_infected[i, 1:] = n_infected[i - 1, :-1]
@@ -26,18 +26,21 @@ def simulate(
 
 def initialize_infected(
     avg_init_infected: float,
-    T1: int,
     T2: int,
     num_trips: int,
 ) -> np.ndarray:
-    lam = avg_init_infected / float(T2 - T1)
-    return np.random.poisson(lam, (T2 - T1, num_trips))
+    lam = avg_init_infected / float(T2)
+    return np.random.poisson(lam, (T2, num_trips))
 
 
 def generate_new_infections(
-    n_infected: np.ndarray, p: float, c: float, outside_infection_rate: float
+    currently_infected: np.ndarray,
+    T1: int,
+    p: float,
+    c: float,
+    outside_infection_rate: float,
 ) -> int:
-    lam = p * c * np.sum(n_infected, axis=0) + outside_infection_rate
+    lam = p * c * np.sum(currently_infected[T1:], axis=0) + outside_infection_rate
     return np.random.poisson(lam)
 
 

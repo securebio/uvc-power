@@ -82,6 +82,6 @@ if __name__ == "__main__":
                         ax.set_xticklabels([])
 
             fig.savefig(
-                f"fig/power_analysis_prevalence={prevalence}_orate={outside_infection_rate}.pdf",
+                f"fig/power_analysis_prevalence={prevalence}_orate={outside_infection_rate}.png",
                 bbox_inches="tight",
             )
