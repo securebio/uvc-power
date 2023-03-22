@@ -58,11 +58,11 @@ if __name__ == "__main__":
     p = R0 / (c * (T2 - T1))
 
     # Cruise parameters
-    num_trips = 3
+    num_trips = 1
     Tc = 10
     avg_init_infected = 16
     reduction_factor = 0.5
-    outside_infection_rate = 0.0
+    outside_infection_rate = 1.0
 
     n_sims = 10000
     pos_tests_null1 = np.array(
@@ -107,7 +107,14 @@ if __name__ == "__main__":
         [
             total_positive_tests(
                 simulate(
-                    num_trips, avg_init_infected, T1, T2, Tc, p * reduction_factor, c
+                    num_trips,
+                    avg_init_infected,
+                    T1,
+                    T2,
+                    Tc,
+                    p * reduction_factor,
+                    c,
+                    outside_infection_rate,
                 ),
                 Tpos,
             )
