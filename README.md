@@ -114,6 +114,7 @@ The product of $p$ and $c$ is determined from the other parameters.
 Viral prevalence = 0.04 per person
 
 Rate of new cases from outside the ship = 0
+
 ![Power analysis 1](fig/power_analysis_prevalence=0.04_orate=0.png)
 
 ### Lower prevalence / some outside contact
