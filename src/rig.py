@@ -134,7 +134,8 @@ def run_simulation(
         return {Shift.OFF: rate_off, Shift.ON: rate_on}
 
     def _step(c: Crew) -> Crew:
-        infected = (infect(w, _infection_rates(c)) for w in c)
+        rates = _infection_rates(c)
+        infected = (infect(w, rates) for w in c)
         recovered = (recover(w, t_rec) for w in infected)
         changed = (change_shift(w, schedule) for w in recovered)
         return [advance_day(w) for w in changed]
@@ -163,11 +164,7 @@ def main():
         },
         t_change=7,
     )
-    for i in range(1000):
-        run_simulation(**params)
-    # for line in sim:
-    #     print(line)
-    #     print(len(line))
+    run_simulation(**params)
 
 
 if __name__ == "__main__":
