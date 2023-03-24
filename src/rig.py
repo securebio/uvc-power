@@ -45,16 +45,6 @@ def change_shift(worker: Worker, sched: Schedule) -> Worker:
         return worker
 
 
-def first_positive_test(w: Worker, t_pos: int) -> bool:
-    return (
-        w.shift == Shift.ON
-        and w.infection_status == InfectionStatus.I
-        # Don't count new infections on when they first join the crew
-        and w.shift_days > 0
-        and w.infection_days == t_pos
-    )
-
-
 def advance_day(w: Worker) -> Worker:
     return Worker(w.shift, w.shift_days + 1, w.infection_status, w.infection_days + 1)
 
@@ -114,6 +104,20 @@ def initialize_crew(
     return [infect(w, _init_infection_rates(prev), randint(1, t_rec)) for w in crew]
 
 
+def first_positive_test(w: Worker, t_pos: int) -> bool:
+    return (
+        w.shift == Shift.ON
+        and w.infection_status == InfectionStatus.I
+        # Don't count new infections on when they first join the crew
+        and w.shift_days > 0
+        and w.infection_days == t_pos
+    )
+
+
+def count_first_positive_tests(crew: Crew, t_pos: int) -> int:
+    return sum(first_positive_test(w, t_pos) for w in crew)
+
+
 SimulationResult = list[Crew]
 
 
@@ -141,7 +145,6 @@ def run_simulation(
         return [advance_day(w) for w in changed]
 
     crew = initialize_crew(crew_size, schedule, t_change, prevalence, t_rec)
-    # TODO: Burn-in
     sim = [crew]
     for i in range(n_days):
         sim.append(_step(sim[-1]))
@@ -154,8 +157,8 @@ def main():
     params = dict(
         n_days=365,
         crew_size=120,
-        prevalence=0.1,
-        r0=1,
+        prevalence=0.05,
+        r0=1.3,
         t_inf=2,
         t_rec=12,
         schedule={
@@ -164,7 +167,9 @@ def main():
         },
         t_change=7,
     )
-    run_simulation(**params)
+    sim = run_simulation(**params)
+    for line in sim:
+        print(count_infected(line, Shift.ON), count_infected(line, Shift.OFF))
 
 
 if __name__ == "__main__":
