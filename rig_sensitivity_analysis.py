@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 from itertools import product
 from src import rig
 from typing import Iterable
@@ -21,7 +22,7 @@ def sim_power(
     r0: float,
     reduction_factors: Iterable[float],
     t_pos: int,
-    **params
+    **params,
 ) -> np.ndarray:
     sims_control = [
         rig.run_simulation(r0=r0, n_days=max(n_days), **params) for _ in range(n_sims)
@@ -56,10 +57,13 @@ def main():
     prevalences = [0.025, 0.05, 0.1]
     n_days = [30 * months for months in range(1, 9)]
     reduction_factors = [0.5, 0.8]
-    print("crew_size", "prevalence", "days", "reduction_factor", sep=",")
+    print("crew_size", "prevalence", "days", "reduction_factor", "power", sep=",")
     for crew_size, prevalence in product(crew_sizes, prevalences):
+        sys.stderr.write(
+            f"Working on: crew_size={crew_size}, prevalence={prevalence}\n"
+        )
         params = dict(
-            n_sims=1,
+            n_sims=1000,
             n_days=n_days,
             crew_size=crew_size,
             prevalence=prevalence,
