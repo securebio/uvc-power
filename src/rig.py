@@ -5,7 +5,7 @@ from random import random, randint
 from itertools import cycle, islice, chain
 
 
-class Shift(Enum):
+class Shift(str, Enum):
     ON = 1
     OFF = 2
 
@@ -149,6 +149,20 @@ def run_simulation(
     for i in range(n_days):
         sim.append(_step(sim[-1]))
     return sim
+
+
+def sim_cases(
+    t_pos: int,
+    days_on: int,
+    days_off: int,
+    **params,
+) -> list[int]:
+    schedule = {
+        Shift.ON: ScheduleEntry(days_on, Shift.OFF),
+        Shift.OFF: ScheduleEntry(days_off, Shift.ON),
+    }
+    sim = run_simulation(schedule=schedule, **params)
+    return [count_first_positive_tests(crew, t_pos) for crew in sim]
 
 
 def main():
