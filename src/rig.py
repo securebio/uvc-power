@@ -3,6 +3,7 @@ from typing import Optional, Iterable
 from enum import Enum
 from random import random, randint
 from itertools import cycle, islice, chain
+import numpy as np
 
 
 class Shift(str, Enum):
@@ -116,6 +117,13 @@ def first_positive_test(w: Worker, t_pos: int) -> bool:
 
 def count_first_positive_tests(crew: Crew, t_pos: int) -> int:
     return sum(first_positive_test(w, t_pos) for w in crew)
+
+
+def power(
+    test_stat_control: np.ndarray, test_stat_alt: np.ndarray, alpha: float = 0.05
+) -> np.ndarray:
+    t_thresh = np.quantile(test_stat_control, 1 - alpha, axis=-1)
+    return np.mean(test_stat_alt > np.expand_dims(t_thresh, axis=(-1, -2)), axis=-1)
 
 
 SimulationResult = list[Crew]

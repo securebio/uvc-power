@@ -1,27 +1,34 @@
-from src import rig
+import numpy as np
 import json
 
+from src import rig
+
+
+PREV = np.logspace(-2, 0, 3, base=2) * 0.1
+R0 = [0.1 * i for i in range(5, 14)] + [0.65]
+SHIFT = [28]
+case_sim_template = "data/cases/shift={shift}/prev={prev}/r0={r0}.txt"
 
 rule all:
     input:
-        expand("data/cases_prev={prev}.txt", prev=[0.025, 0.05, 0.1])
+        expand(case_sim_template, prev=PREV, r0=R0, shift=SHIFT)
 
 
 rule simulate_cases:
     output:
-        "data/cases_prev={prev}.txt"
+        case_sim_template
     run:
-        n_sims = 100
+        n_sims = 2000
         params = dict(
-            days_on = 28,
+            days_on = int(wildcards.shift),
             days_off = 28,
             crew_size = 100,
             prevalence = float(wildcards.prev),
-            n_days = 240,
+            n_days = 460,
             t_pos=2,
             t_inf=2,
             t_rec=12,
-            r0=1.3,
+            r0=float(wildcards.r0),
             t_change=7,
         )
         with open(output[0], 'wt') as outfile:
