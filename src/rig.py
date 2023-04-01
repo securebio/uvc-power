@@ -20,9 +20,9 @@ class InfectionStatus(Enum):
 @dataclass
 class Worker:
     shift: Shift
-    shift_days: int
+    shift_changed_on: int
     infection_status: InfectionStatus
-    infection_days: int
+    infection_status_changed_on: int
 
 
 Crew = list[Worker]
@@ -37,33 +37,35 @@ class ScheduleEntry:
 Schedule = dict[Shift, ScheduleEntry]
 
 
-def change_shift(worker: Worker, sched: Schedule) -> Worker:
+def change_shift(worker: Worker, day: int, sched: Schedule) -> Worker:
     sched_entry = sched[worker.shift]
-    if worker.shift_days >= sched_entry.length:
+    if day - worker.shift_changed_on >= sched_entry.length:
         return Worker(
-            sched_entry.next_shift, 0, worker.infection_status, worker.infection_days
+            sched_entry.next_shift,
+            day,
+            worker.infection_status,
+            worker.infection_status_changed_on,
         )
     else:
         return worker
 
 
-def advance_day(w: Worker) -> Worker:
-    return Worker(w.shift, w.shift_days + 1, w.infection_status, w.infection_days + 1)
-
-
 RateMap = dict[Shift, float]
 
 
-def infect(w: Worker, infection_rates: RateMap, infection_age: int = 0) -> Worker:
+def infect(w: Worker, day: int, infection_rates: RateMap) -> Worker:
     if w.infection_status == InfectionStatus.S and random() <= infection_rates[w.shift]:
-        return Worker(w.shift, w.shift_days, InfectionStatus.I, infection_age)
+        return Worker(w.shift, w.shift_changed_on, InfectionStatus.I, day)
     else:
         return w
 
 
-def recover(w: Worker, t_rec: int) -> Worker:
-    if w.infection_status == InfectionStatus.I and w.infection_days >= t_rec:
-        return Worker(w.shift, w.shift_days, InfectionStatus.R, 0)
+def recover(w: Worker, day: int, t_rec: int) -> Worker:
+    if (
+        w.infection_status == InfectionStatus.I
+        and day - w.infection_status_changed_on >= t_rec
+    ):
+        return Worker(w.shift, w.shift_changed_on, InfectionStatus.R, day)
     else:
         return w
 
@@ -72,11 +74,11 @@ def count_shift(crew: Crew, shift: Shift) -> int:
     return sum(w.shift == shift for w in crew)
 
 
-def count_infected(crew: Crew, shift: Optional[Shift] = None) -> int:
+def count_status(
+    crew: Crew, status: InfectionStatus, shift: Optional[Shift] = None
+) -> int:
     return sum(
-        not shift or w.shift == shift
-        for w in crew
-        if w.infection_status == InfectionStatus.I
+        not shift or w.shift == shift for w in crew if w.infection_status == status
     )
 
 
@@ -101,20 +103,6 @@ def initialize_crew(crew_size: int, sched: Schedule, t_change: int) -> Crew:
     )
 
 
-def first_positive_test(w: Worker, t_pos: int) -> bool:
-    return (
-        w.shift == Shift.ON
-        and w.infection_status == InfectionStatus.I
-        # Don't count new infections on when they first join the crew
-        and w.shift_days > 0
-        and w.infection_days == t_pos
-    )
-
-
-def count_first_positive_tests(crew: Crew, t_pos: int) -> int:
-    return sum(first_positive_test(w, t_pos) for w in crew)
-
-
 def power(
     test_stat_control: np.ndarray, test_stat_alt: np.ndarray, alpha: float = 0.05
 ) -> np.ndarray:
@@ -137,16 +125,17 @@ def run_simulation(
 ) -> SimulationResult:
     def _infection_rates(c: Crew, day: int) -> RateMap:
         rate_off = prevalence(day) / t_rec
-        prop_inf_on = count_infected(c, Shift.ON) / count_shift(c, Shift.ON)
+        prop_inf_on = count_status(c, InfectionStatus.I, Shift.ON) / count_shift(
+            c, Shift.ON
+        )
         rate_on = r0 * prop_inf_on / (t_rec - t_inf)
         return {Shift.OFF: rate_off, Shift.ON: rate_on}
 
     def _step(c: Crew, day: int) -> Crew:
         rates = _infection_rates(c, day)
-        infected = (infect(w, rates) for w in c)
-        recovered = (recover(w, t_rec) for w in infected)
-        changed = (change_shift(w, schedule) for w in recovered)
-        return [advance_day(w) for w in changed]
+        infected = (infect(w, day, rates) for w in c)
+        recovered = (recover(w, day, t_rec) for w in infected)
+        return [change_shift(w, day, schedule) for w in recovered]
 
     crew = initialize_crew(crew_size, schedule, t_change)
     sim = [crew]
@@ -155,18 +144,18 @@ def run_simulation(
     return sim
 
 
-def sim_cases(
-    t_pos: int,
-    days_on: int,
-    days_off: int,
-    **params,
-) -> list[int]:
-    schedule = {
-        Shift.ON: ScheduleEntry(days_on, Shift.OFF),
-        Shift.OFF: ScheduleEntry(days_off, Shift.ON),
-    }
-    sim = run_simulation(schedule=schedule, **params)
-    return [count_first_positive_tests(crew, t_pos) for crew in sim]
+# def sim_cases(
+#     t_pos: int,
+#     days_on: int,
+#     days_off: int,
+#     **params,
+# ) -> list[int]:
+#     schedule = {
+#         Shift.ON: ScheduleEntry(days_on, Shift.OFF),
+#         Shift.OFF: ScheduleEntry(days_off, Shift.ON),
+#     }
+#     sim = run_simulation(schedule=schedule, **params)
+#     return [count_first_positive_tests(crew, t_pos) for crew in sim]
 
 
 def main():
@@ -187,7 +176,16 @@ def main():
     )
     sim = run_simulation(**params)
     for line in sim:
-        print(count_infected(line, Shift.ON), count_infected(line, Shift.OFF))
+        print(
+            "Infected: ",
+            count_status(line, InfectionStatus.I, Shift.ON),
+            count_status(line, InfectionStatus.I, Shift.OFF),
+        )
+        print(
+            "Recovered:",
+            count_status(line, InfectionStatus.R, Shift.ON),
+            count_status(line, InfectionStatus.R, Shift.OFF),
+        )
 
 
 if __name__ == "__main__":
