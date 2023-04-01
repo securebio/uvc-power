@@ -120,9 +120,15 @@ def run_simulation(
     r0: float,
     t_inf: int,
     t_rec: int,
-    schedule: Schedule,
+    days_on: int,
+    days_off: int,
     t_change: int,
 ) -> SimulationResult:
+    schedule = {
+        Shift.ON: ScheduleEntry(days_on, Shift.OFF),
+        Shift.OFF: ScheduleEntry(days_off, Shift.ON),
+    }
+
     def _infection_rates(c: Crew, day: int) -> RateMap:
         rate_off = prevalence(day) / t_rec
         prop_inf_on = count_status(c, InfectionStatus.I, Shift.ON) / count_shift(
@@ -139,39 +145,46 @@ def run_simulation(
 
     crew = initialize_crew(crew_size, schedule, t_change)
     sim = [crew]
-    for day in range(n_days):
+    for day in range(1, n_days):
         sim.append(_step(sim[-1], day))
     return sim
 
 
-# def sim_cases(
-#     t_pos: int,
-#     days_on: int,
-#     days_off: int,
-#     **params,
-# ) -> list[int]:
-#     schedule = {
-#         Shift.ON: ScheduleEntry(days_on, Shift.OFF),
-#         Shift.OFF: ScheduleEntry(days_off, Shift.ON),
-#     }
-#     sim = run_simulation(schedule=schedule, **params)
-#     return [count_first_positive_tests(crew, t_pos) for crew in sim]
+# NOTE: Not generically correct, just works for current infection
+def _tests_positive(w: Worker, d: int) -> bool:
+    ret = (
+        w.shift == Shift.ON
+        and w.infection_status == InfectionStatus.I
+        and w.shift_changed_on <= d
+        and w.infection_status_changed_on <= d
+    )
+    return ret
+
+
+def count_first_positive_tests(
+    sim: SimulationResult,
+    test_frequency: int,
+) -> list[int]:
+    test_days = range(0, len(sim), test_frequency)
+    return [
+        sum(
+            _tests_positive(w, this_test) and not _tests_positive(w, last_test)
+            for w in sim[this_test]
+        )
+        for last_test, this_test in zip(test_days, test_days[1:])
+    ]
 
 
 def main():
-    days_on = 28
-    days_off = 28
     params = dict(
         n_days=365,
         crew_size=120,
-        prevalence=lambda d: 0.05,
+        prevalence=lambda d: 0.05 if d < 100 else 0,
         r0=1.3,
         t_inf=2,
         t_rec=12,
-        schedule={
-            Shift.ON: ScheduleEntry(days_on, Shift.OFF),
-            Shift.OFF: ScheduleEntry(days_off, Shift.ON),
-        },
+        days_on=28,
+        days_off=28,
         t_change=7,
     )
     sim = run_simulation(**params)
@@ -186,6 +199,9 @@ def main():
             count_status(line, InfectionStatus.R, Shift.ON),
             count_status(line, InfectionStatus.R, Shift.OFF),
         )
+
+    for line in count_first_positive_tests(sim, 1):
+        print(line)
 
 
 if __name__ == "__main__":
