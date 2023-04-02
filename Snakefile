@@ -9,10 +9,11 @@ PREV = [0.05, 0.1, 0.2, 0.4]
 DURATION = [30, 60, 120]
 T_REC = [6, 12]
 case_sim_template = "data/cases/r0={r0}/prev={prev}/duration={duration}/t_rec={t_rec}.txt"
+avg_sim_template = "data/avg/r0={r0}/prev={prev}/duration={duration}/t_rec={t_rec}.txt"
 
 rule all:
     input:
-        expand(case_sim_template, prev=PREV, r0=R0, duration=DURATION, t_rec=T_REC)
+        expand(avg_sim_template, prev=PREV, r0=R0, duration=DURATION, t_rec=T_REC)
 
 rule simulate_cases:
     output:
@@ -40,3 +41,18 @@ rule simulate_cases:
             outfile.write(header + "\n")
             for _ in range(n_sims):
                 outfile.write(",".join(str(cases) for cases in rig.sim_cases(**params)) + "\n")
+
+
+rule average_sims:
+    input:
+        case_sim_template
+    output:
+        avg_sim_template
+    run:
+        with open(output[0], 'wt') as outfile:
+            with open(input[0], 'rt') as infile:
+                outfile.write(infile.readline())
+                outfile.write(infile.readline())
+                data = np.loadtxt(infile, delimiter=",")
+            outfile.write(','.join(str(x) for x in np.mean(data, axis=0)) + '\n')
+            outfile.write(','.join(str(x) for x in np.var(data, axis=0)) + '\n')
