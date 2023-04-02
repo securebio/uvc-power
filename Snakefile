@@ -4,15 +4,15 @@ import json
 from src import rig
 
 
-PREV = np.logspace(-2, 0, 3, base=2) * 0.1
 R0 = [0.1 * i for i in range(5, 14)] + [0.65]
-SHIFT = [28]
-case_sim_template = "data/cases/shift={shift}/prev={prev}/r0={r0}.txt"
+PREV = [0.05, 0.1, 0.2, 0.4]
+DURATION = [30, 60, 120]
+T_REC = [6, 12]
+case_sim_template = "data/cases/r0={r0}/prev={prev}/duration={duration}/t_rec={t_rec}.txt"
 
 rule all:
     input:
-        expand(case_sim_template, prev=PREV, r0=R0, shift=SHIFT)
-
+        expand(case_sim_template, prev=PREV, r0=R0, duration=DURATION, t_rec=T_REC)
 
 rule simulate_cases:
     output:
@@ -20,18 +20,23 @@ rule simulate_cases:
     run:
         n_sims = 2000
         params = dict(
-            days_on = int(wildcards.shift),
-            days_off = 28,
-            crew_size = 100,
-            prevalence = float(wildcards.prev),
-            n_days = 460,
-            t_pos=2,
-            t_inf=2,
-            t_rec=12,
+            n_days = 180,
+            duration = float(wildcards.duration),
+            peak = 90,
+            total_prev = float(wildcards.prev),
+            crew_size=120,
             r0=float(wildcards.r0),
+            t_inf=2,
+            t_rec=int(wildcards.t_rec),
+            days_on=28,
+            days_off=28,
             t_change=7,
+            t_samps = [1, 3, 7],
+            t_pos = 2,
         )
+        header = "imported_cases," + ",".join(f"pos_tests_sampled_{d}_days" for d in params["t_samps"])
         with open(output[0], 'wt') as outfile:
             outfile.write(json.dumps(params) + "\n")
+            outfile.write(header + "\n")
             for _ in range(n_sims):
                 outfile.write(",".join(str(cases) for cases in rig.sim_cases(**params)) + "\n")

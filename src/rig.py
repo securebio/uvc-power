@@ -157,24 +157,24 @@ def count_first_positive_tests(
     sim: SimulationResult,
     test_frequency: int,
     t_pos: int,
-) -> list[int]:
+) -> Iterable[int]:
     test_days = range(0, len(sim), test_frequency)
-    return [
+    return (
         sum(
             _tests_positive(w, this_test, t_pos)
             and not _tests_positive(w, last_test, t_pos)
             for w in sim[this_test]
         )
         for last_test, this_test in zip(test_days, test_days[1:])
-    ]
+    )
 
 
 def _new_imported_case(w: Worker, d: int) -> bool:
     return _tests_positive(w, d, 0) and w.shift_changed_on == d
 
 
-def count_new_imported_cases(sim: SimulationResult) -> list[int]:
-    return [sum(_new_imported_case(w, d) for w in crew) for d, crew in enumerate(sim)]
+def count_new_imported_cases(sim: SimulationResult) -> Iterable[int]:
+    return (sum(_new_imported_case(w, d) for w in crew) for d, crew in enumerate(sim))
 
 
 def gaussian_infection_rates(
@@ -182,6 +182,14 @@ def gaussian_infection_rates(
 ) -> InfectionCurve:
     gauss = norm(loc=peak, scale=duration / 8)
     return lambda d: total_prevalence * gauss.pdf(d)
+
+
+def sim_cases(duration, peak, total_prev, t_pos, t_samps, **params):
+    infection_rate = gaussian_infection_rates(duration, peak, total_prev)
+    sim = run_simulation(mainland_infection_rate=infection_rate, **params)
+    return [sum(count_new_imported_cases(sim))] + [
+        sum(count_first_positive_tests(sim, t_samp, t_pos)) for t_samp in t_samps
+    ]
 
 
 def power(
@@ -199,7 +207,7 @@ def main():
     print([infection_rate(d) for d in range(duration)])
 
     params = dict(
-        n_days=duration * 2,
+        n_days=180,
         crew_size=120,
         mainland_infection_rate=infection_rate,
         r0=1.3,
@@ -222,10 +230,10 @@ def main():
             count_status(line, InfectionStatus.R, Shift.OFF),
         )
 
-    print("First positive tests:")
-    print(*(line for line in count_first_positive_tests(sim, 7, 2)))
     print("New imported cases:")
-    print(*(line for line in count_new_imported_cases(sim)))
+    print(sum(count_new_imported_cases(sim)))
+    print("First positive tests at 1,3,7 days:")
+    print(*(sum(count_first_positive_tests(sim, t_samp, 2)) for t_samp in [1, 3, 7]))
 
 
 if __name__ == "__main__":
