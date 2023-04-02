@@ -4,6 +4,7 @@ from enum import Enum
 from random import random
 from itertools import cycle, islice, chain, accumulate
 import numpy as np
+from scipy.stats import norm  # type: ignore
 
 
 class Shift(str, Enum):
@@ -104,12 +105,13 @@ def initialize_crew(crew_size: int, sched: Schedule, t_change: int) -> Crew:
 
 
 SimulationResult = list[Crew]
+InfectionCurve = Callable[[int], float]
 
 
 def run_simulation(
     n_days: int,
     crew_size: int,
-    mainland_infection_rate: Callable[[int], float],
+    mainland_infection_rate: InfectionCurve,
     r0: float,
     t_inf: int,
     t_rec: int,
@@ -175,6 +177,13 @@ def count_new_imported_cases(sim: SimulationResult) -> list[int]:
     return [sum(_new_imported_case(w, d) for w in crew) for d, crew in enumerate(sim)]
 
 
+def gaussian_infection_rates(
+    duration: float, peak: float, total_prevalence: float
+) -> InfectionCurve:
+    gauss = norm(loc=peak, scale=duration / 8)
+    return lambda d: total_prevalence * gauss.pdf(d)
+
+
 def power(
     test_stat_control: np.ndarray, test_stat_alt: np.ndarray, alpha: float = 0.05
 ) -> np.ndarray:
@@ -183,10 +192,16 @@ def power(
 
 
 def main():
+    duration = 60
+    peak = duration / 2
+    total_prev = 0.20
+    infection_rate = gaussian_infection_rates(duration, peak, total_prev)
+    print([infection_rate(d) for d in range(duration)])
+
     params = dict(
-        n_days=365,
+        n_days=duration * 2,
         crew_size=120,
-        mainland_infection_rate=lambda d: 0.005 if d < 100 else 0,
+        mainland_infection_rate=infection_rate,
         r0=1.3,
         t_inf=2,
         t_rec=12,
@@ -208,11 +223,9 @@ def main():
         )
 
     print("First positive tests:")
-    for line in count_first_positive_tests(sim, 7, 2):
-        print(line)
+    print(*(line for line in count_first_positive_tests(sim, 7, 2)))
     print("New imported cases:")
-    for line in count_new_imported_cases(sim):
-        print(line)
+    print(*(line for line in count_new_imported_cases(sim)))
 
 
 if __name__ == "__main__":
