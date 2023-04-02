@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, Iterable, Callable
 from enum import Enum
 from random import random
-from itertools import cycle, islice, chain
+from itertools import cycle, islice, chain, accumulate
 import numpy as np
 
 
@@ -103,20 +103,13 @@ def initialize_crew(crew_size: int, sched: Schedule, t_change: int) -> Crew:
     )
 
 
-def power(
-    test_stat_control: np.ndarray, test_stat_alt: np.ndarray, alpha: float = 0.05
-) -> np.ndarray:
-    t_thresh = np.quantile(test_stat_control, 1 - alpha, axis=-1)
-    return np.mean(test_stat_alt > np.expand_dims(t_thresh, axis=(-1, -2)), axis=-1)
-
-
 SimulationResult = list[Crew]
 
 
 def run_simulation(
     n_days: int,
     crew_size: int,
-    prevalence: Callable[[int], float],
+    mainland_infection_rate: Callable[[int], float],
     r0: float,
     t_inf: int,
     t_rec: int,
@@ -130,7 +123,7 @@ def run_simulation(
     }
 
     def _infection_rates(c: Crew, day: int) -> RateMap:
-        rate_off = prevalence(day) / t_rec
+        rate_off = mainland_infection_rate(day)
         prop_inf_on = count_status(c, InfectionStatus.I, Shift.ON) / count_shift(
             c, Shift.ON
         )
@@ -144,42 +137,56 @@ def run_simulation(
         return [change_shift(w, day, schedule) for w in recovered]
 
     crew = initialize_crew(crew_size, schedule, t_change)
-    sim = [crew]
-    for day in range(1, n_days):
-        sim.append(_step(sim[-1], day))
-    return sim
+    days = range(1, n_days)
+    return list(accumulate(days, _step, initial=crew))
 
 
 # NOTE: Not generically correct, just works for current infection
-def _tests_positive(w: Worker, d: int) -> bool:
-    ret = (
+def _tests_positive(w: Worker, d: int, t_pos: int) -> bool:
+    return (
         w.shift == Shift.ON
         and w.infection_status == InfectionStatus.I
         and w.shift_changed_on <= d
-        and w.infection_status_changed_on <= d
+        and w.infection_status_changed_on <= d - t_pos
     )
-    return ret
 
 
 def count_first_positive_tests(
     sim: SimulationResult,
     test_frequency: int,
+    t_pos: int,
 ) -> list[int]:
     test_days = range(0, len(sim), test_frequency)
     return [
         sum(
-            _tests_positive(w, this_test) and not _tests_positive(w, last_test)
+            _tests_positive(w, this_test, t_pos)
+            and not _tests_positive(w, last_test, t_pos)
             for w in sim[this_test]
         )
         for last_test, this_test in zip(test_days, test_days[1:])
     ]
 
 
+def _new_imported_case(w: Worker, d: int) -> bool:
+    return _tests_positive(w, d, 0) and w.shift_changed_on == d
+
+
+def count_new_imported_cases(sim: SimulationResult) -> list[int]:
+    return [sum(_new_imported_case(w, d) for w in crew) for d, crew in enumerate(sim)]
+
+
+def power(
+    test_stat_control: np.ndarray, test_stat_alt: np.ndarray, alpha: float = 0.05
+) -> np.ndarray:
+    t_thresh = np.quantile(test_stat_control, 1 - alpha, axis=-1)
+    return np.mean(test_stat_alt > np.expand_dims(t_thresh, axis=(-1, -2)), axis=-1)
+
+
 def main():
     params = dict(
         n_days=365,
         crew_size=120,
-        prevalence=lambda d: 0.05 if d < 100 else 0,
+        mainland_infection_rate=lambda d: 0.005 if d < 100 else 0,
         r0=1.3,
         t_inf=2,
         t_rec=12,
@@ -200,7 +207,11 @@ def main():
             count_status(line, InfectionStatus.R, Shift.OFF),
         )
 
-    for line in count_first_positive_tests(sim, 1):
+    print("First positive tests:")
+    for line in count_first_positive_tests(sim, 7, 2):
+        print(line)
+    print("New imported cases:")
+    for line in count_new_imported_cases(sim):
         print(line)
 
 
