@@ -1,14 +1,44 @@
 [
   {
-    "name": "covid",
-    "t_inf": 2,
-    "t_rec": 4,
-    "total_prev": 0.2
+    "name": "CoV",
+    "t_inf": 1.5,
+    "t_rec": 6,
+    "total_prev": 0.393
   },
   {
-    "name": "flu",
+    "name": "Influenza",
+    "t_inf": 1.5,
+    "t_rec": 4.5,
+    "total_prev": 0.477
+  },
+  {
+    "name": "RSV",
+    "t_inf": 3.5,
+    "t_rec": 9,
+    "total_prev": 0.316
+  },
+  {
+    "name": "Enterovirus",
     "t_inf": 2,
-    "t_rec": 12,
-    "total_prev": 0.1
+    "t_rec": 8.5,
+    "total_prev": 0.082
+  },
+  {
+    "name": "Parainfluenza",
+    "t_inf": 3,
+    "t_rec": 9.5,
+    "total_prev": 0.182
+  },
+  {
+    "name": "Rhinovirus",
+    "t_inf": 2,
+    "t_rec": 8.5,
+    "total_prev": 0.638
+  },
+  {
+    "name": "Adenovirus",
+    "t_inf": 5,
+    "t_rec": 15,
+    "total_prev": 0.055
   }
 ]

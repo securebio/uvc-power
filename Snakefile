@@ -23,8 +23,7 @@ virus_sim_template = "data/viruses/r0={r0}/reduction_factor={rf}.txt"
 
 rule all:
     input:
-        expand(case_sim_template, prev=PREV, r0=R0, duration=DURATION, t_rec=T_REC),
-        expand(virus_sim_template, r0=[1.0, 1.1, 1.2, 1.3, 1.4, 1.5], rf=RF)
+        expand(virus_sim_template, r0=[1.0, 1.125, 1.25, 1.5, 2.0], rf=RF)
 
 rule simulate_cases:
     output:
