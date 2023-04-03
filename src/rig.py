@@ -1,4 +1,6 @@
 from dataclasses import dataclass
+from pathlib import Path
+import json
 from typing import Optional, Iterable, Callable
 from enum import Enum
 from random import random
@@ -184,12 +186,58 @@ def gaussian_infection_rates(
     return lambda d: total_prevalence * gauss.pdf(d)
 
 
-def sim_cases(duration, peak, total_prev, t_pos, t_samps, **params):
+def sim_cases(
+    duration: float,
+    peak: float,
+    total_prev: float,
+    t_pos: int,
+    t_samps: list[int],
+    **params
+):
     infection_rate = gaussian_infection_rates(duration, peak, total_prev)
     sim = run_simulation(mainland_infection_rate=infection_rate, **params)
     return [sum(count_new_imported_cases(sim))] + [
         sum(count_first_positive_tests(sim, t_samp, t_pos)) for t_samp in t_samps
     ]
+
+
+@dataclass
+class Virus:
+    name: str
+    r0: float
+    t_inf: int
+    t_rec: int
+    t_pos: int
+    total_prev: float
+    duration: float
+    peak: float
+
+
+def load_viruses(filepath: Path, **kwargs) -> list[Virus]:
+    with open(filepath) as f:
+        data = json.load(f)
+    # Assume t_pos = t_inf
+    return [Virus(t_pos=entry["t_inf"], **entry, **kwargs) for entry in data]
+
+
+def sim_multiple_viruses(
+    viruses: list[Virus], reduction_factor: float, t_samps: list[int], **params
+):
+    cases = (
+        sim_cases(
+            v.duration,
+            v.peak,
+            v.total_prev,
+            v.t_pos,
+            t_samps,
+            r0=v.r0 * reduction_factor,
+            t_inf=v.t_inf,
+            t_rec=v.t_rec,
+            **params
+        )
+        for v in viruses
+    )
+    return [sum(x) for x in zip(*cases)]
 
 
 def power(

@@ -1,0 +1,14 @@
+[
+  {
+    "name": "covid",
+    "t_inf": 2,
+    "t_rec": 4,
+    "total_prev": 0.2
+  },
+  {
+    "name": "flu",
+    "t_inf": 2,
+    "t_rec": 12,
+    "total_prev": 0.1
+  }
+]
