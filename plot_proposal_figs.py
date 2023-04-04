@@ -3,6 +3,9 @@ import matplotlib.pyplot as plt  # type: ignore
 from typing import Any
 
 virus_sim_template = "data/viruses/r0={r0}/reduction_factor={rf}.txt"
+xlim = [0.1 - 0.025, 0.525]
+ylim = [-0.05, 1.05]
+xticks = np.arange(0.1, 0.55, 0.1)
 
 
 def load_multivirus(
@@ -85,7 +88,9 @@ def plot_main_text_fig(
         if j == 0:
             ax.set_ylabel("Power")
         ax.set_title(f"{n_years} winter{s_if_plural(n_years)}", fontsize=10)
-        ax.set_ylim([-0.05, 1.05])
+        ax.set_ylim(ylim)
+        ax.set_xlim(xlim)
+        ax.set_xticks(xticks)
     fig.text(0.5, -0.05, "Fraction of transmissions prevented", ha="center")
     return fig
 
@@ -114,7 +119,7 @@ def plot_appendix_fig(
                 dash = "-"
             else:
                 dash = "--"
-            ax.plot(RF, powers, dash, color="C0", label=f"{t_samp}")
+            ax.plot([1 - rf for rf in RF], powers, dash, color="C0", label=f"{t_samp}")
         if j == 1:
             ax.legend(title="Days between\nsamples", frameon=False)
             ax.set_yticklabels([])
@@ -122,6 +127,8 @@ def plot_appendix_fig(
             ax.set_ylabel("Power")
         ax.set_title(f"{n_years} winter{s_if_plural(n_years)}", fontsize=10)
         ax.set_ylim([-0.05, 1.05])
+        ax.set_xticks([0.1, 0.2, 0.3, 0.4, 0.5])
+        ax.set_xlim([0.05, 0.55])
 
     for j, n_years in enumerate(N_YEARS):
         ax = axes[1, j]
@@ -137,15 +144,17 @@ def plot_appendix_fig(
                 )
                 for cases_control, cases_uv in data
             ]
-            ax.plot(RF, powers, "-", label=f"{frac_missing}")
+            ax.plot([1 - rf for rf in RF], powers, "-", label=f"{frac_missing}")
         if j == 1:
             ax.legend(title="Fraction of\ntests missing", frameon=False)
             ax.set_yticklabels([])
         if j == 0:
             ax.set_ylabel("Power")
         ax.set_title(f"{n_years} winter{s_if_plural(n_years)}", fontsize=10)
-        ax.set_ylim([-0.05, 1.05])
-    fig.text(0.5, -0.05, "Transmission reduction fraction", ha="center")
+        ax.set_ylim(ylim)
+        ax.set_xlim(xlim)
+        ax.set_xticks(xticks)
+    fig.text(0.5, -0.05, "Fraction of transmissions prevented", ha="center")
     return fig
 
 
