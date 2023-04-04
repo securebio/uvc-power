@@ -1,12 +1,11 @@
-from dataclasses import dataclass
-from pathlib import Path
 import json
-from typing import Optional, Iterable, Callable
+from dataclasses import dataclass
 from enum import Enum
+from itertools import accumulate, chain, cycle, islice
+from math import exp, pi, sqrt
+from pathlib import Path
 from random import random
-from itertools import cycle, islice, chain, accumulate
-import numpy as np
-from scipy.stats import norm  # type: ignore
+from typing import Callable, Iterable, Optional
 
 
 class Shift(str, Enum):
@@ -182,8 +181,12 @@ def count_new_imported_cases(sim: SimulationResult) -> Iterable[int]:
 def gaussian_infection_rates(
     duration: float, peak: float, total_prevalence: float
 ) -> InfectionCurve:
-    gauss = norm(loc=peak, scale=duration / 8)
-    return lambda d: total_prevalence * gauss.pdf(d)
+    sigma = duration / 8
+    return (
+        lambda d: total_prevalence
+        * exp(-(((d - peak) / sigma) ** 2) / 2)
+        / (sqrt(2 * pi) * sigma)
+    )
 
 
 def sim_cases(
@@ -238,13 +241,6 @@ def sim_multiple_viruses(
         for v in viruses
     )
     return [sum(x) for x in zip(*cases)]
-
-
-def power(
-    test_stat_control: np.ndarray, test_stat_alt: np.ndarray, alpha: float = 0.05
-) -> np.ndarray:
-    t_thresh = np.quantile(test_stat_control, 1 - alpha, axis=-1)
-    return np.mean(test_stat_alt > np.expand_dims(t_thresh, axis=(-1, -2)), axis=-1)
 
 
 def main():
