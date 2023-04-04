@@ -17,13 +17,14 @@ R0 = [0.1 * i for i in range(5, 14)] + [0.65] + [2.0, 4.0]
 PREV = [0.05, 0.1, 0.2, 0.4]
 DURATION = [30, 60, 90, 120]
 T_REC = [6, 12]
-RF = [0.5, 0.6, 0.7, 0.8, 0.9]
+RF = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
 case_sim_template = "data/cases/r0={r0}/prev={prev}/duration={duration}/t_rec={t_rec}.txt"
-virus_sim_template = "data/viruses/r0={r0}/reduction_factor={rf}.txt"
+virus_sim_template = "data/{viruses}/r0={r0}/reduction_factor={rf}.txt"
 
 rule all:
     input:
-        expand(virus_sim_template, r0=[1.0, 1.125, 1.25, 1.5, 2.0], rf=RF)
+        expand(virus_sim_template, r0=[1.0, 1.125, 1.25, 1.5, 2.0], rf=RF, viruses=["viruses", "viruses_75"])
+
 
 rule simulate_cases:
     output:
@@ -49,7 +50,7 @@ rule simulate_cases:
 
 rule simulate_viruses:
     input:
-        "viruses.json"
+        "{viruses}.json"
     output:
         virus_sim_template
     run:
