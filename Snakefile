@@ -14,10 +14,21 @@ R0 = [1.25, 1.5, 1.75, 2.0]
 RF = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
 virus_sim_template = "data/{viruses}/r0={r0}/reduction_factor={rf}.txt"
 
+figs = ["fig/main_text.png", "fig/appendix.png"]
+
 
 rule all:
     input:
+        figs
+
+
+rule figures:
+    input:
         expand(virus_sim_template, r0=R0, rf=RF, viruses=VIRUSES)
+    output:
+        figs
+    shell:
+        "python plot_proposal_figs.py"
 
 
 rule simulate_viruses:
