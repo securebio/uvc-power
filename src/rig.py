@@ -15,8 +15,9 @@ class Shift(str, Enum):
 
 class InfectionStatus(Enum):
     S = 1
-    I = 2  # noqa: E741
-    R = 3
+    E = 2
+    I = 3  # noqa: E741
+    R = 4
 
 
 @dataclass
@@ -55,17 +56,22 @@ def change_shift(worker: Worker, day: int, sched: Schedule) -> Worker:
 RateMap = dict[Shift, float]
 
 
-def infect(w: Worker, day: int, infection_rates: RateMap) -> Worker:
+def expose(w: Worker, day: int, infection_rates: RateMap) -> Worker:
     if w.infection_status == InfectionStatus.S and random() <= infection_rates[w.shift]:
-        return Worker(w.shift, w.shift_changed_on, InfectionStatus.I, day)
+        return Worker(w.shift, w.shift_changed_on, InfectionStatus.E, day)
     else:
         return w
 
 
-def recover(w: Worker, day: int, t_rec: int) -> Worker:
+def update_infections(w: Worker, day: int, t_inf: int, t_rec: int) -> Worker:
     if (
+        w.infection_status == InfectionStatus.E
+        and day - w.infection_status_changed_on >= t_inf
+    ):
+        return Worker(w.shift, w.shift_changed_on, InfectionStatus.I, day)
+    elif (
         w.infection_status == InfectionStatus.I
-        and day - w.infection_status_changed_on >= t_rec
+        and day - w.infection_status_changed_on >= t_rec - t_inf
     ):
         return Worker(w.shift, w.shift_changed_on, InfectionStatus.R, day)
     else:
@@ -80,7 +86,7 @@ def count_status(
     crew: Crew, status: InfectionStatus, shift: Optional[Shift] = None
 ) -> int:
     return sum(
-        not shift or w.shift == shift for w in crew if w.infection_status == status
+        (not shift or w.shift == shift) and w.infection_status == status for w in crew
     )
 
 
@@ -134,48 +140,43 @@ def run_simulation(
         return {Shift.OFF: rate_off, Shift.ON: rate_on}
 
     def _step(c: Crew, day: int) -> Crew:
-        rates = _infection_rates(c, day)
-        infected = (infect(w, day, rates) for w in c)
-        recovered = (recover(w, day, t_rec) for w in infected)
-        return [change_shift(w, day, schedule) for w in recovered]
+        changed = (change_shift(w, day, schedule) for w in c)
+        updated = [update_infections(w, day, t_inf, t_rec) for w in changed]
+        rates = _infection_rates(updated, day)
+        return [expose(w, day, rates) for w in updated]
 
     crew = initialize_crew(crew_size, schedule, t_change)
     days = range(1, n_days)
     return list(accumulate(days, _step, initial=crew))
 
 
-# NOTE: Not generically correct, just works for current infection
-def _tests_positive(w: Worker, d: int, t_pos: int) -> bool:
-    return (
-        w.shift == Shift.ON
-        and w.infection_status == InfectionStatus.I
-        and w.shift_changed_on <= d
-        and w.infection_status_changed_on <= d - t_pos
-    )
+def tests_positive(w: Worker) -> bool:
+    return w.shift == Shift.ON and w.infection_status == InfectionStatus.I
 
 
 def count_first_positive_tests(
     sim: SimulationResult,
     test_frequency: int,
-    t_pos: int,
 ) -> Iterable[int]:
     test_days = range(0, len(sim), test_frequency)
     return (
         sum(
-            _tests_positive(w, this_test, t_pos)
-            and not _tests_positive(w, last_test, t_pos)
-            for w in sim[this_test]
+            tests_positive(w_now) and not tests_positive(w_past)
+            for (w_now, w_past) in zip(sim[crew_now], sim[crew_past])
         )
-        for last_test, this_test in zip(test_days, test_days[1:])
+        for crew_now, crew_past in zip(test_days, test_days[1:])
     )
 
 
-def _new_imported_case(w: Worker, d: int) -> bool:
-    return _tests_positive(w, d, 0) and w.shift_changed_on == d
+def new_imported_case(w: Worker, d: int) -> bool:
+    return (
+        w.infection_status in [InfectionStatus.E, InfectionStatus.I]
+        and w.shift_changed_on == d
+    )
 
 
 def count_new_imported_cases(sim: SimulationResult) -> Iterable[int]:
-    return (sum(_new_imported_case(w, d) for w in crew) for d, crew in enumerate(sim))
+    return (sum(new_imported_case(w, d) for w in crew) for d, crew in enumerate(sim))
 
 
 def gaussian_infection_rates(
@@ -190,17 +191,12 @@ def gaussian_infection_rates(
 
 
 def sim_cases(
-    duration: float,
-    peak: float,
-    total_prev: float,
-    t_pos: int,
-    t_samps: list[int],
-    **params
+    duration: float, peak: float, total_prev: float, t_samps: list[int], **params
 ):
     infection_rate = gaussian_infection_rates(duration, peak, total_prev)
     sim = run_simulation(mainland_infection_rate=infection_rate, **params)
     return [sum(count_new_imported_cases(sim))] + [
-        sum(count_first_positive_tests(sim, t_samp, t_pos)) for t_samp in t_samps
+        sum(count_first_positive_tests(sim, t_samp)) for t_samp in t_samps
     ]
 
 
@@ -210,7 +206,6 @@ class Virus:
     r0: float
     t_inf: int
     t_rec: int
-    t_pos: int
     total_prev: float
     duration: float
     peak: float
@@ -219,8 +214,7 @@ class Virus:
 def load_viruses(filepath: Path, **kwargs) -> list[Virus]:
     with open(filepath) as f:
         data = json.load(f)
-    # Assume t_pos = t_inf
-    return [Virus(t_pos=entry["t_inf"], **entry, **kwargs) for entry in data]
+    return [Virus(**entry, **kwargs) for entry in data]
 
 
 def sim_multiple_viruses(
@@ -231,7 +225,6 @@ def sim_multiple_viruses(
             v.duration,
             v.peak,
             v.total_prev,
-            v.t_pos,
             t_samps,
             r0=v.r0 * reduction_factor,
             t_inf=v.t_inf,
@@ -254,7 +247,7 @@ def main():
         n_days=180,
         crew_size=120,
         mainland_infection_rate=infection_rate,
-        r0=1.3,
+        r0=2.5,
         t_inf=2,
         t_rec=12,
         days_on=28,
@@ -263,6 +256,11 @@ def main():
     )
     sim = run_simulation(**params)
     for line in sim:
+        print(
+            "Exposed: ",
+            count_status(line, InfectionStatus.E, Shift.ON),
+            count_status(line, InfectionStatus.E, Shift.OFF),
+        )
         print(
             "Infected: ",
             count_status(line, InfectionStatus.I, Shift.ON),
@@ -277,7 +275,7 @@ def main():
     print("New imported cases:")
     print(sum(count_new_imported_cases(sim)))
     print("First positive tests at 1,3,7 days:")
-    print(*(sum(count_first_positive_tests(sim, t_samp, 2)) for t_samp in [1, 3, 7]))
+    print(*(sum(count_first_positive_tests(sim, t_samp)) for t_samp in [1, 3, 7]))
 
 
 if __name__ == "__main__":
