@@ -126,9 +126,9 @@ def plot_appendix_fig(
         if j == 0:
             ax.set_ylabel("Power")
         ax.set_title(f"{n_years} winter{s_if_plural(n_years)}", fontsize=10)
-        ax.set_ylim([-0.05, 1.05])
-        ax.set_xticks([0.1, 0.2, 0.3, 0.4, 0.5])
-        ax.set_xlim([0.05, 0.55])
+        ax.set_ylim(ylim)
+        ax.set_xlim(xlim)
+        ax.set_xticks(xticks)
 
     for j, n_years in enumerate(N_YEARS):
         ax = axes[1, j]
