@@ -1,3 +1,4 @@
+from random import seed
 from src import rig
 
 global_params = dict(
@@ -45,6 +46,7 @@ rule simulate_viruses:
     output:
         virus_sim_template,
     run:
+        seed(output[0])
         n_sims = 2000
         viruses = rig.load_viruses(
             input[0], r0=float(wildcards.r0), duration=60, peak=90
