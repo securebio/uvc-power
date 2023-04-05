@@ -53,7 +53,6 @@ if __name__ == "__main__":
     fig = plt.figure(figsize=(3, 2))
     ax = fig.add_subplot(1, 1, 1)
     for nt in num_trips:
-        # sim_power(n_sims, reduction_factor, *params):
         power_curve = np.array(
             [
                 sim_power(

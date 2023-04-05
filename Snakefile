@@ -29,7 +29,7 @@ rule rig_figures:
         "fig/main_text.png",
         "fig/appendix.png",
     shell:
-        "python plot_rig_figs.py"
+        "python plot_rig_figs.py {output}"
 
 
 rule cruise_figures:

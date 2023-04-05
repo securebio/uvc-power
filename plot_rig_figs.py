@@ -1,6 +1,8 @@
-import numpy as np
-import matplotlib.pyplot as plt  # type: ignore
+from sys import argv
 from typing import Any
+
+import matplotlib.pyplot as plt  # type: ignore
+import numpy as np
 
 virus_sim_template = "data/viruses/r0={r0}/reduction_factor={rf}.txt"
 xlim = [0.1 - 0.025, 0.525]
@@ -159,6 +161,7 @@ def plot_appendix_fig(
 
 
 def main():
+    _, main_text_file, appendix_file = argv
     R0 = [1.25, 1.5, 1.75, 2.0]
     params = dict(
         n_samples=4000,
@@ -168,9 +171,9 @@ def main():
     )
     np.random.seed(101)
     fig_main_text = plot_main_text_fig(R0=R0, **params)
-    fig_main_text.savefig("fig/main_text.png", bbox_inches="tight", dpi=300)
+    fig_main_text.savefig(main_text_file, bbox_inches="tight", dpi=300)
     fig_appendix = plot_appendix_fig(r0=1.5, **params)
-    fig_appendix.savefig("fig/appendix.png", bbox_inches="tight", dpi=300)
+    fig_appendix.savefig(appendix_file, bbox_inches="tight", dpi=300)
 
 
 if __name__ == "__main__":
