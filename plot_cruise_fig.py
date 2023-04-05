@@ -6,7 +6,7 @@ import numpy as np
 from src.cruise import simulate, total_positive_tests
 
 
-def sim_power(n_sims, reduction_factor, *params):
+def sim_power(n_sims, reduction_factor, Tpos, *params):
     sims_control = [simulate(*params) for _ in range(n_sims)]
     sims_uv = [
         simulate(*params, reduction_factor=reduction_factor) for _ in range(n_sims)
@@ -26,66 +26,62 @@ def sim_power(n_sims, reduction_factor, *params):
 
 
 if __name__ == "__main__":
+    np.random.seed(3094820)
     _, output_file = argv
 
+    xlim = [0.1 - 0.025, 0.525]
+    ylim = [-0.05, 1.05]
+    xticks = np.arange(0.1, 0.55, 0.1)
+
     # Disease parameters
-    R0 = 1.3
+    R0 = 1.5
     c = 100
     T1 = 2
     T2 = 12
     Tpos = T1
     p = R0 / (c * (T2 - T1))
 
-    n_sims = 200
-    reduction_factors = np.arange(0.2, 1.0, 0.2)
+    n_sims = 4000
+    reduction_factors = np.arange(0.5, 0.95, 0.05)
     num_trips = [1, 2, 5]
-    num_passengers = [400, 1200, 3600]
-    trip_lengths = [10, 20]
+    trip_length = 10
 
+    num_passengers = 400
     prevalence = 0.1
-    outside_infection_rate = 0
+    avg_init_infected = prevalence * num_passengers
 
-    fig, axes = plt.subplots(len(num_passengers), len(trip_lengths), figsize=(6, 8))
-
-    for i, num_p in enumerate(num_passengers):
-        for j, Tc in enumerate(trip_lengths):
-            ax = axes[i, j]
-            avg_init_infected = prevalence * num_p
-            for nt in num_trips:
-                power_curve = np.array(
-                    [
-                        sim_power(
-                            n_sims,
-                            rf,
-                            nt,
-                            avg_init_infected,
-                            T1,
-                            T2,
-                            Tc,
-                            p,
-                            c,
-                            outside_infection_rate * num_p,
-                        )
-                        for rf in reduction_factors
-                    ]
+    fig = plt.figure(figsize=(3, 2))
+    ax = fig.add_subplot(1, 1, 1)
+    for nt in num_trips:
+        # sim_power(n_sims, reduction_factor, *params):
+        power_curve = np.array(
+            [
+                sim_power(
+                    n_sims,
+                    rf,
+                    Tpos,
+                    nt,
+                    avg_init_infected,
+                    T1,
+                    T2,
+                    trip_length,
+                    p,
+                    c,
+                    0,
                 )
-                ax.plot(reduction_factors, power_curve, label=nt)
-            ax.legend(title="# trips")
-            ax.set_ylim([-0.05, 1.05])
-            if j == 0:
-                ax.set_ylabel("Power")
-            else:
-                ax.set_yticklabels([])
-            if i == 0:
-                ax.set_title(f"Trip length = {Tc} days\n# passengers = {num_p}")
-            else:
-                ax.set_title(f"# passengers = {num_p}")
-            if i == len(num_passengers) - 1:
-                ax.set_xlabel("Transmission reduction factor")
-            else:
-                ax.set_xticklabels([])
+                for rf in reduction_factors
+            ]
+        )
+        ax.plot(1 - reduction_factors, power_curve, label=nt)
+    ax.legend(title="# of trips", frameon=False)
+    ax.set_ylim(ylim)
+    ax.set_xlim(xlim)
+    ax.set_xticks(xticks)
+    ax.set_ylabel("Power")
+    ax.set_xlabel("Fraction of transmissions prevented")
 
     fig.savefig(
         output_file,
         bbox_inches="tight",
+        dpi=300,
     )
