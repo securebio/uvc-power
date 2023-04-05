@@ -18,3 +18,7 @@ repos:
     rev: 23.1.0
     hooks:
     -   id: black
+-   repo: https://github.com/snakemake/snakefmt
+    rev: 'v0.8.4'
+    hooks:
+    -   id: snakefmt
