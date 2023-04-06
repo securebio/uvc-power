@@ -47,7 +47,10 @@ rule simulate_viruses:
         virus_sim_template,
     run:
         seed(output[0])
-        n_sims = 4000
+        try:
+            n_sims = config["n_sims"]
+        except KeyError:
+            n_sims = 4000
         viruses = rig.load_viruses(
             input[0], r0=float(wildcards.r0), duration=60, peak=90
         )
