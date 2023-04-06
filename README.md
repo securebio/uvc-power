@@ -25,7 +25,7 @@ git clone https://github.com/securebio/uvc-power.git && cd uvc-power
 
 Next, set up a virtual environment (optional, but recommended)
 and install the requirements:
-```
+```bash
 python -m venv env &&
 source env/bin/activate &&
 python -m pip install -r requirements.txt
@@ -36,7 +36,7 @@ Now the simulations are ready to run.
 ## Usage
 
 To run all the simulations and make the figures:
-```
+```bash
 snakemake --cores
 ```
 If the simulation output already exists and you'd like to force snakemake to rerun the pipeline, use the `-F` flag.
@@ -44,6 +44,6 @@ If the simulation output already exists and you'd like to force snakemake to rer
 **Warning**: The simulations are not optimized for speed and may take a long time to run
 (~1hr using a 10-core machine).
 To test the simulations without waiting as long, you can set the number of replicate simulations per condition (default=4000) to a smaller number (200 is recommended):
-```
+```bash
 snakemake --cores --config n_sims=200
 ```
