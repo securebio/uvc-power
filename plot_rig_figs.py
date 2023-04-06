@@ -10,12 +10,10 @@ ylim = [-0.05, 1.05]
 xticks = np.arange(0.1, 0.55, 0.1)
 
 
-def load_multivirus(
-    i_control: int = 3, i_uv: int = 7, **kwargs
-) -> tuple[np.ndarray, np.ndarray]:
+def load_cases(i_tsamp: int, **kwargs) -> np.ndarray:
     with open(virus_sim_template.format(**kwargs)) as data:
         cases = np.loadtxt(data, delimiter=",", dtype=int)
-        return cases[:, i_control], cases[:, i_uv]
+        return cases[:, i_tsamp]
 
 
 def sample_total(
@@ -63,6 +61,18 @@ def s_if_plural(n: int) -> str:
         return "s"
 
 
+def format_ax(ax, x_pos: int, n_years: int, legend_title: str):
+    if x_pos == 0:
+        ax.set_ylabel("Power")
+    if x_pos == 1:
+        ax.legend(title=legend_title, frameon=False)
+        ax.set_yticklabels([])
+    ax.set_title(f"{n_years} winter{s_if_plural(n_years)}", fontsize=10)
+    ax.set_ylim(ylim)
+    ax.set_xlim(xlim)
+    ax.set_xticks(xticks)
+
+
 def plot_main_text_fig(
     n_samples: int,
     n_rigs: int,
@@ -76,7 +86,8 @@ def plot_main_text_fig(
         for r0 in R0:
             powers = [
                 power_from_cases(
-                    *load_multivirus(r0=r0, rf=rf),
+                    load_cases(i_tsamp=2, r0=r0, rf=1.0),
+                    load_cases(i_tsamp=2, r0=r0, rf=rf),
                     n_rigs,
                     n_years,
                     n_samples,
@@ -84,15 +95,7 @@ def plot_main_text_fig(
                 for rf in RF
             ]
             ax.plot([1 - rf for rf in RF], powers, "-", label=f"{r0}")
-        if j == 1:
-            ax.legend(title="$R_0$", frameon=False)
-            ax.set_yticklabels([])
-        if j == 0:
-            ax.set_ylabel("Power")
-        ax.set_title(f"{n_years} winter{s_if_plural(n_years)}", fontsize=10)
-        ax.set_ylim(ylim)
-        ax.set_xlim(xlim)
-        ax.set_xticks(xticks)
+        format_ax(ax, j, n_years, legend_title="$R_0$")
     fig.text(0.5, -0.05, "Fraction of transmissions prevented", ha="center")
     return fig
 
@@ -107,10 +110,11 @@ def plot_appendix_fig(
     fig, axes = plt.subplots(2, len(N_YEARS), layout="constrained", figsize=(5, 4))
     for j, n_years in enumerate(N_YEARS):
         ax = axes[0, j]
-        for i_control, i_uv, t_samp in [(2, 6, 3), (3, 7, 7)]:
+        for i_tsamp, t_samp in [(1, 3), (2, 7)]:
             powers = [
                 power_from_cases(
-                    *load_multivirus(i_control=i_control, i_uv=i_uv, r0=r0, rf=rf),
+                    load_cases(i_tsamp=i_tsamp, r0=r0, rf=1.0),
+                    load_cases(i_tsamp=i_tsamp, r0=r0, rf=rf),
                     n_rigs,
                     n_years,
                     n_samples,
@@ -122,40 +126,27 @@ def plot_appendix_fig(
             else:
                 dash = "--"
             ax.plot([1 - rf for rf in RF], powers, dash, color="C0", label=f"{t_samp}")
-        if j == 1:
-            ax.legend(title="Days between\nsamples", frameon=False)
-            ax.set_yticklabels([])
-        if j == 0:
-            ax.set_ylabel("Power")
-        ax.set_title(f"{n_years} winter{s_if_plural(n_years)}", fontsize=10)
-        ax.set_ylim(ylim)
-        ax.set_xlim(xlim)
-        ax.set_xticks(xticks)
+        format_ax(ax, j, n_years, legend_title="Days between\nsamples")
 
     for j, n_years in enumerate(N_YEARS):
         ax = axes[1, j]
         for frac_missing in [0.0, 0.5, 0.9]:
-            data = [load_multivirus(r0=r0, rf=rf) for rf in RF]
             powers = [
                 power_from_cases(
-                    np.random.binomial(n=cases_control, p=1 - frac_missing),
-                    np.random.binomial(n=cases_uv, p=1 - frac_missing),
+                    np.random.binomial(
+                        n=load_cases(i_tsamp=2, r0=r0, rf=1.0), p=1 - frac_missing
+                    ),
+                    np.random.binomial(
+                        n=load_cases(i_tsamp=2, r0=r0, rf=rf), p=1 - frac_missing
+                    ),
                     n_rigs,
                     n_years,
                     n_samples,
                 )
-                for cases_control, cases_uv in data
+                for rf in RF
             ]
             ax.plot([1 - rf for rf in RF], powers, "-", label=f"{frac_missing}")
-        if j == 1:
-            ax.legend(title="Fraction of\ntests missing", frameon=False)
-            ax.set_yticklabels([])
-        if j == 0:
-            ax.set_ylabel("Power")
-        ax.set_title(f"{n_years} winter{s_if_plural(n_years)}", fontsize=10)
-        ax.set_ylim(ylim)
-        ax.set_xlim(xlim)
-        ax.set_xticks(xticks)
+        format_ax(ax, j, n_years, legend_title="Fraction of\ntests missing")
     fig.text(0.5, -0.05, "Fraction of transmissions prevented", ha="center")
     return fig
 

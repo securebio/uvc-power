@@ -280,20 +280,6 @@ def count_first_positive_tests(
     )
 
 
-def new_imported_case(w: Worker, d: int) -> bool:
-    """Return True if the worker is exposed or infectious when they come onto
-    the rig."""
-    return (
-        w.infection_status in [InfectionStatus.E, InfectionStatus.I]
-        and w.shift_changed_on == d
-    )
-
-
-def count_new_imported_cases(sim: SimulationResult) -> Iterable[int]:
-    """Count the number of new causes entering the rig each day."""
-    return (sum(new_imported_case(w, d) for w in crew) for d, crew in enumerate(sim))
-
-
 def _gaussian_infection_rates(
     duration: float, peak: float, total_prevalence: float
 ) -> InfectionCurve:
@@ -328,9 +314,7 @@ def sim_cases(
     """
     infection_rate = _gaussian_infection_rates(duration, peak, total_prev)
     sim = run_simulation(mainland_infection_rate=infection_rate, **params)
-    return [sum(count_new_imported_cases(sim))] + [
-        sum(count_first_positive_tests(sim, t_samp)) for t_samp in t_samps
-    ]
+    return [sum(count_first_positive_tests(sim, t_samp)) for t_samp in t_samps]
 
 
 @dataclass
@@ -443,8 +427,6 @@ def main():
             count_status(line, InfectionStatus.R, Shift.OFF),
         )
 
-    print("New imported cases:")
-    print(sum(count_new_imported_cases(sim)))
     print("First positive tests at 1,3,7 days:")
     print(*(sum(count_first_positive_tests(sim, t_samp)) for t_samp in [1, 3, 7]))
 
