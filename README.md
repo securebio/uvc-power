@@ -5,7 +5,10 @@ Spring 2023
 
 ## Introduction
 
-This repository contains simulation code to support [POINTER TO PROPOSAL].
+This repository contains code to simulate viral outbreaks in isolated
+environments (oil rigs and cruise ships).
+It was developed for a power analysis of a proposed experiment to evaluate
+the efficacy of 222 nm far-UVC in reducing infection rates on oil platforms.
 It contains:
 
 - Code to simulate viral spread among workers on an oil platform (`src/rig.py`)
